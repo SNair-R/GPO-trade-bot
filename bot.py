@@ -55,16 +55,22 @@ async def ping(ctx):
     await ctx.send("pong")
 
 # main trade command
-@bot.command()
-async def t(ctx, *, arg: str):
+@bot.command(name="trade", aliases=['t'])
+async def trade(ctx, *, arg: str = None):
+    
+    # make sure there is input
+    if not arg:
+        await ctx.send("Invalid format. Use `!trade <item1>, <item2> for <item3>, <item4>`")
+        return
+      
     ###
     # Example:
-    # !t dragon, golden sword for phoenix
+    # !trade dragon, golden sword for phoenix
     ###
     values = load_values()
 
     if " for " not in arg.lower():
-        await ctx.send("Invalid format. Use `!t item1, item2 for item3, item4`")
+        await ctx.send("Invalid format. Use `!trade <item1>, <item2> for <item3>, <item4>`")
         return
     
     left, right = arg.split(" for ", 1)  # split once
@@ -72,7 +78,7 @@ async def t(ctx, *, arg: str):
     right = right.strip()
 
     if not left or not right:
-        await ctx.send("Invalid format. Use `!t item1, item2 for item3, item4`")
+        await ctx.send("Invalid format. Use `!trade <item1>, <item2> for <item3>, <item4>`")
         return
 
     
@@ -159,6 +165,73 @@ async def t(ctx, *, arg: str):
 
     #send msg
     await ctx.send(embed=embed)
+
+# near command
+@bot.command(name="near", aliases=['n'])
+async def near(ctx, *, arg:str = None):
+    
+    # make sure there is input
+    if not arg:
+        await ctx.send("Invalid format. Use `!near <item>, <range>`")
+        return
+    
+    # make the list of values sorted by value
+    values = load_values()
+    order = sorted(
+        ((name, value) for name, value in values.items() if isinstance(value, int)),
+        key=lambda x: x[1]
+    )
+    
+    # parse input for item and range
+    parts = arg.split(",")
+    if len(parts) > 2:
+        await ctx.send("Invalid format. Use `!near <item>, <range>`")
+        return
+    
+    item = norm(parts[0])
+    range_str = norm(parts[1]) if len(parts) > 1 else "3"
+    if not range_str.isdigit():
+        await ctx.send("Range must be a number.")
+        return
+    range_of_items = int(range_str)
+    
+
+    # validate item
+    if item not in values:
+        await ctx.send(f"Missing value for: {item}")
+        return
+    
+    # index of the item
+    idx = next(i for i, (name, _) in enumerate(order) if name == item)
+
+    # make list of items near the target item
+    line = []
+    for offset in range(-range_of_items, range_of_items + 1):
+        target = idx + offset
+        if 0 <= target < len(order):
+            name, value = order[target]
+            if offset == 0:
+                prefix = "➡️ "
+            else:
+                prefix = "• "
+            line.append(f"{prefix}{name.title()} - {value}")
+
+    # make embed
+    embed = discord.Embed(
+        title = f"Items near '{item.title()}'",
+        color = discord.Color.from_rgb(135, 206, 235)
+
+    )
+
+    embed.add_field(
+        name="",
+        value="\n\n".join(line),
+        inline=False
+    )
+
+    await ctx.send(embed=embed)
+
+
 
 # read the token from environment variable
 TOKEN = os.getenv("DISCORD_BOT_TOKEN")
