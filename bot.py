@@ -198,7 +198,10 @@ async def near(ctx, *, arg:str = None):
 
     # validate item
     if item not in values:
-        await ctx.send(f"Missing value for: {item}")
+        await ctx.send(
+        f"Missing value for: `{item}`\n"
+        "Usage: `!near <item>, <range>`"
+        )
         return
     
     # index of the item
